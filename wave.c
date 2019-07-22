@@ -8,8 +8,7 @@ int main()
     sem_t *semRlyEmpty, *semRlyFull;
     void *shmRlyAddr = NULL;
     struct tShmRly *pshmRly;
-    struct stat buf;
-
+    struct stat buf;;
     signal(SIGINT, &funSIGINT);
     initWave();
 
@@ -40,6 +39,8 @@ int main()
     //格式化共享内存
     pshmRly = (struct tShmRly *)shmRlyAddr;
 
+    pshmRly->yes_BinFlag=1;  //生成ASCII文件
+
     //创建信号量
     semRlyEmpty = sem_open(SEM_RLY_EMPTY, 0);
     if (semRlyEmpty == SEM_FAILED)
@@ -61,7 +62,12 @@ int main()
 
         sem_wait(semRlyFull);
 
-        gener_CFGFile(pshmRly->startRecoWave,pshmRly->faultZeroTime,pshmRly->DATCFG_filename);
+        gener_CFGFile(pshmRly->startRecoWave,pshmRly->faultZeroTime,pshmRly->DATCFG_filename,pshmRly->yes_BinFlag);
+
+        if(pshmRly->yes_BinFlag==1)
+            gener_BinDATFile(SAMC,YXC,SAMP*SAML,pshmRly->data,pshmRly->status_data,pshmRly->DATCFG_filename);
+        else 
+            gerner_ASCIIDATFile(SAMC,YXC,SAMP*SAML,pshmRly->data,pshmRly->status_data,pshmRly->DATCFG_filename);
         //////WORT BGN///////
         printf("接收到semRlyFull信号量\n");
         //////WORK END///////
@@ -82,7 +88,7 @@ int main()
     // 关闭shmRly
     close(shmRlyId);
 
-    //关闭信号量
+    //关闭信号�?
     sem_close(semRlyEmpty);
     sem_close(semRlyFull);
 
@@ -103,64 +109,167 @@ void funSIGINT(int signo)
 
 int initWave()
 {
-    int st = 0; //执行状态
+    int st = 0; //执行状�?
 
     return st;
 }
 
-void gener_CFGFile(char *startRecTim,char *faultTime,char *filename)
+
+/**
+ * @description: 生成配置文件
+ * @param {startRecTim：startRecTim：开始录波时刻，faultZeroTime：故障0时刻，filename：文件名，yesBinFlag配置成二进制文件 1是/0否} 
+ * @return: 
+ */
+FUNSTATUS gener_CFGFile(char *startRecTim,char *faultZeroTime,char *filename,char yesBinFlag)
 {
     FILE *fp;
-    if(filename==NULL) exit(1);
+    if(filename==NULL) return FALSE;
     sprintf(filename+19,".CFG");
     if((fp=fopen(filename, "w"))==NULL){
         printf("open %s flie error",filename);
-        exit(1);
+        return FALSE;
     }
-    fprintf(fp,"%s\n%s\n","环网柜,BD622,2013","61,23A,38D"); //厂站名，记录装置标示，版本号 ；   通道总数，模拟通道总数，数字通道总数
+    fprintf(fp,"%s\n%s\n","环网柜,BD622,2013","18,16A,2D"); //厂站名，记录装置标示，版本号 �?   通道总数，模拟通道总数，数字通道总数
 
-    fprintf(fp,"1,Ua1,,,V,0.005143,0.000000,0,-13735,13594,10000,100,S\n");
-    fprintf(fp,"2,Ub1,,,V,0.005143,0.000000,0,-13705,13593,10000,100,S\n");
-    fprintf(fp,"3,Uc1,,,V,0.005143,0.000000,0,-13746,13615,10000,100,S\n");
-    fprintf(fp,"4,I母,,,V,0.008730,0.000000,0,-8114,7886,10000,100,S\n");
-    fprintf(fp,"5,01#线,,,A,0.000257,0.000000,0,-22241,26601,100,1,S\n");
-    fprintf(fp,"6,02#线,,,A,0.000257,0.000000,0,-23313,24237,100,1,S\n");
-    fprintf(fp,"7,03#线,,,A,0.000257,0.000000,0,-26169,28051,100,1,S\n");
-    fprintf(fp,"8,04#线,,,A,0.000257,0.000000,0,-8321,11303,100,1,S\n");
-    fprintf(fp,"9,05#线,,,A,0.000257,0.000000,0,-6049,8117,100,1,S\n");
-    fprintf(fp,"10,06#线,,,A,0.000257,0.000000,0,-6008,8175,100,1,S\n");
-    fprintf(fp,"11,07#线,,,A,0.000257,0.000000,0,-4678,6201,100,1,S\n");
-    fprintf(fp,"12,Ua2,,,V,0.005143,0.000000,0,-103,-81,10000,100,S\n");
-    fprintf(fp,"13,Ub2,,,V,0.005143,0.000000,0,-102,-88,10000,100,S\n");
-    fprintf(fp,"14,Uc2,,,V,0.005143,0.000000,0,-106,-85,10000,100,S\n");
-    fprintf(fp,"15,II母,,,V,0.008730,0.000000,0,-106,-82,10000,100,S\n");
-    fprintf(fp,"16,08#线,,,A,0.000257,0.000000,0,-3994,5340,100,1,S\n");
-    fprintf(fp,"17,09#线,,,A,0.000257,0.000000,0,-3182,4371,100,1,S\n");
-    fprintf(fp,"18,10#线,,,A,0.000257,0.000000,0,-3275,4770,100,1,S\n");
-    fprintf(fp,"19,11#线,,,A,0.000257,0.000000,0,-2606,3898,100,1,S\n");
-    fprintf(fp,"20,12#线,,,A,0.000257,0.000000,0,-2392,3659,100,1,S\n");
-    fprintf(fp,"21,13#线,,,A,0.000257,0.000000,0,-1802,3462,100,1,S\n");
-    fprintf(fp,"22,14#线,,,A,0.000257,0.000000,0,-1466,2694,100,1,S\n");
-    fprintf(fp,"23,15#线,,,A,0.000257,0.000000,0,-1155,2350,100,1,S\n");
-    fprintf(fp,"1,选线启动,,,0\n");
-    fprintf(fp,"2,选线跳闸,,,0\n");
-    fprintf(fp,"3,后加速跳闸,,,0\n");
-    fprintf(fp,"4,启动轮切,,,0\n");
-    fprintf(fp,"5,分段1-TWJ,,,0\n");
-    fprintf(fp,"6,分段2-TWJ,,,0\n");
-    fprintf(fp,"7,备用,,,0\n");
-    fprintf(fp,"8,备用,,,0\n");
-    fprintf(fp,"9,01#线_跳闸,,,0\n");
-    fprintf(fp,"10,01#线_TWJ,,,0\n");
-    fprintf(fp,"11,02#线_跳闸,,,0\n");
-    fprintf(fp,"12,02#线_TWJ,,,0\n");
-    fprintf(fp,"13,03#线_跳闸,,,0\n");
-    fprintf(fp,"14,03#线_TWJ,,,0\n");
-    fprintf(fp,"15,04#线_跳闸,,,0\n");
-    fprintf(fp,"16,04#线_TWJ,,,0\n17,05#线_跳闸,,,0\n18,05#线_TWJ,,,0\n19,06#线_跳闸,,,0\n20,06#线_TWJ,,,0\n21,07#线_跳闸,,,0\n22,07#线_TWJ,,,0\n23,08#线_跳闸,,,0\n24,08#线_TWJ,,,0\n25,09#线_跳闸,,,0\n26,09#线_TWJ,,,0\n27,10#线_跳闸,,,0\n28,10#线_TWJ,,,0\n29,11#线_跳闸,,,0\n30,11#线_TWJ,,,0\n31,12#线_跳闸,,,0\n32,12#线_TWJ,,,0\n33,13#线_跳闸,,,0\n34,13#线_TWJ,,,0\n35,14#线_跳闸,,,0\n36,14#线_TWJ,,,0\n37,15#线_跳闸,,,0\n38,15#线_TWJ,,,0\n");
+    fprintf(fp,"1,U01,,,V,0.000153,0.000000,0,-32768,32767,1,1,S\n");
+    fprintf(fp,"2,U02,,,V,0.000153,0.000000,0,-32768,32767,1,1,S\n");
+    fprintf(fp,"3,U03,,,V,0.000153,0.000000,0,-32768,32767,1,1,S\n");
+    fprintf(fp,"4,U04,,,V,0.000153,0.000000,0,-32768,32767,1,1,S\n");
+    fprintf(fp,"5,U05,,,V,0.000153,0.000000,0,-32768,32767,1,1,S\n");
+    fprintf(fp,"6,U06,,,V,0.000153,0.000000,0,-32768,32767,1,1,S\n");
+    fprintf(fp,"7,U07,,,V,0.000153,0.000000,0,-32768,32767,1,1,S\n");
+    fprintf(fp,"8,U08,,,V,0.000153,0.000000,0,-32768,32767,1,1,S\n");
+    fprintf(fp,"9,U09,,,V,0.000153,0.000000,0,-32768,32767,1,1,S\n");
+    fprintf(fp,"10,U10,,,V,0.000153,0.000000,0,-32768,32767,1,1,S\n");
+    fprintf(fp,"11,U11,,,V,0.000153,0.000000,0,-32768,32767,1,1,S\n");
+    fprintf(fp,"12,U12,,,V,0.000153,0.000000,0,-32768,32767,1,1,S\n");
+    fprintf(fp,"13,U13,,,V,0.000153,0.000000,0,-32768,32767,1,1,S\n");
+    fprintf(fp,"14,U14,,,V,0.000153,0.000000,0,-32768,32767,1,1,S\n");
+    fprintf(fp,"15,U15,,,V,0.000153,0.000000,0,-32768,32767,1,1,S\n");
+    fprintf(fp,"16,U16,,,V,0.000153,0.000000,0,-32768,32767,1,1,S\n");
+
+    fprintf(fp,"1,start,,,0\n");
+    fprintf(fp,"2,end,,,0\n");
 
     fprintf(fp,"%s\n%s\n%s\n","50","1","25600,4096"); //电网频率，采样率个数，采样率/HZ，最末采样序号
-    fprintf(fp,"%s\n%s\n",faultTime,startRecTim);//开始录波时刻，故障0时刻
-    fprintf(fp,"BINARY\n1\n");  //二进制文件，时标因子为1
+    fprintf(fp,"%s\n%s\n",startRecTim,faultZeroTime);//开始录波时刻，故障0时刻
+
+    if(yesBinFlag==1)fprintf(fp,"BINARY\n1\n");  //二进制文件，时标因子1
+    else fprintf(fp,"ASCII\n1\n"); //生成ASCII文件
+
+    fprintf(fp,"0,0h\n");//开当地时间与UTC时差为0
+    fprintf(fp,"B,3\n");//误差10s以内,时钟源没有闰秒功能
+
     fclose(fp);
+
+    return TRUE;
 }
+
+
+/**
+ * @description: 生成.DAT二进制文件
+ * @param {chanNum：通道总数，ever_samTotal：每一通道采集个数，samDate：采样数据，filename：文件名} 
+ * @return: 
+ */
+FUNSTATUS gener_BinDATFile(uint16 chanNum,uint16 yx_num,uint16 ever_samTotal,short * samDate,uint8 *staData,char *filename)
+{
+    uint8  x=0,y=0;  
+    uint16 i,j;
+    uint16 status_temp=0,status_data=0;//状态量
+    uint32 num=1,timing=0;//序号，时标
+    FILE *fp;
+    if(filename==NULL) return FALSE;
+
+    sprintf(filename+19,".DAT");
+
+    if((fp=fopen(filename, "wb"))==NULL){
+        printf("open %s flie error",filename);
+        return FALSE;
+    }
+
+    for(j=0;j<ever_samTotal;j++){
+
+        fwrite(&num,sizeof(int),1,fp); //序号
+        fwrite(&timing,sizeof(int),1,fp); //时标
+        num++;
+        timing+=39;  //时标=1000000/25600
+
+        for(i=0;i<chanNum;i++){
+           fwrite(samDate++,sizeof(short),1,fp);
+        }
+        
+        x=(uint8)yx_num/16;  //保存状态量以两个字节为单位，每一位代表一个状态量，即一个单位可保存16路状态量
+        y=(uint8)yx_num%16;
+        for(i=0;i<x;i++){
+            for(j=0;j<16;j++){
+                status_temp=(uint16)(*staData&0x01);  //状态量只有两种情况，0或1
+                status_temp<<=j;  //低通道保存在低位
+                status_data|=status_temp;
+                staData++;
+            }
+            fwrite(&staData,sizeof(uint16),1,fp);
+        }
+
+        for(i=0;i<y;i++){
+            status_temp=(uint16)(*staData&0x01); 
+            status_temp<<=j;
+            status_data|=status_temp;
+            staData++;
+        }
+        fwrite(&status_data,sizeof(uint16),1,fp);
+        status_data=0;
+    }
+    fclose(fp);
+    return TRUE;
+}
+
+/**
+ * @description: 生成.DAT ASCII文件
+ * @param {chanNum：模拟通道总数，yx_num:遥信路数,ever_samTotal：每一通道采集个数，samDate：采样数据，staData:状态量数据,filename：文件名} 
+ * @return: 
+ */
+FUNSTATUS gerner_ASCIIDATFile(uint16 chanNum,uint16 yx_num,uint16 ever_samTotal,short * samDate,uint8 *staData,char *filename)
+{
+     unsigned short i,j;
+    unsigned int num=1,timimg=0;
+    FILE *fp;
+    if(filename==NULL) return FALSE;
+
+    sprintf(filename+19,".DAT");
+
+    if((fp=fopen(filename, "w"))==NULL){
+        printf("open %s flie error",filename);
+        return FALSE;
+    }
+    for(j=0;j<ever_samTotal;j++){  //通道最末序号
+
+        fprintf(fp,"%d,%d,",num,timimg);  //序号+时标
+        num++;
+        timimg+=39;  //时标=1000000/25600
+
+        for(i=0;i<chanNum;i++){  //模拟量
+            fprintf(fp,"%d,",*samDate++);
+        }
+
+        for(i=0;i<yx_num-1;i++){  //数据量
+            fprintf(fp,"%d,",*staData++);
+        }
+        fprintf(fp,"%d\n",*staData++);
+    }
+    fprintf(fp,"1A\n");
+    fclose(fp);
+    return TRUE;
+}
+
+//  //序号、时标倒叙存储，低字节在前，高字节在后
+// unsigned int flashStorage(unsigned int oriDate)
+// {
+//     unsigned int temp=0;
+
+//     temp |= (oriDate&0x000000ff)<<24;
+//     temp |= (oriDate&0x0000ff00)<<8;
+//     temp |= (oriDate&0x00ff0000)>>8;
+//     temp |= (oriDate&0xff000000)>>24;
+
+//     return temp;
+// }

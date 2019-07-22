@@ -12,9 +12,9 @@ int main()
     void *shmRlyAddr = NULL;
     struct tShmRly *pshmRly = NULL;
     int loop = 0;
-    char a[32],b[32];
+ 
     signal(SIGINT, &funSIGINT);
-    get_SysTime(a,b);
+
     //创建shmRly
     shmRlyId = shm_open(SHM_RLY, O_CREAT | O_TRUNC | O_RDWR, 0666);
     if (-1 == shmRlyId)
@@ -74,9 +74,10 @@ int main()
         // save rlyDate to buffer,recalling success will return 0
         if (!sem_wait(semRlyEmpty))  
         { 
-            get_SysTime(pshmRly->DATCFG_filename,pshmRly->startRecoWave);//get SYS Time
+            get_SysTime(pshmRly->DATCFG_filename,pshmRly->startRecoWave);//开始录波时刻系统时间
             samDataMonitor(pshmRly->data, SAMP, SAMC, SAML, 20);
-            get_SysTime(NULL,pshmRly->faultZeroTime);
+            statusDataMonitor(YXC, SAMP*SAML, pshmRly->status_data);
+            get_SysTime(NULL,pshmRly->faultZeroTime); //故障0时刻系统时钟
 
             printf("sl post semRlyFull\n");
             sem_post(semRlyFull);
@@ -172,6 +173,36 @@ void samDataMonitor(short *pdata, int samp, int samc, int saml, int delt)
 /**
  * @param {type} 
  * @return: 
+ * @Description: 模拟生成状态量数据
+ */
+void statusDataMonitor(uint16 yxNnum, uint16 yxTotal, uint8 *status_data)
+{
+    uint16 i,chn;
+    uint32 cnt=0;
+    uint8 flag=0;
+    for (i = 0; i < yxTotal; i++)
+    {
+        if(i>0){
+            if((i%10)==0)flag=1;
+            else flag=0;
+        }
+        for (chn = 0; chn < yxNnum; chn++)
+        {
+
+            if(flag==1)  
+                status_data[cnt++]=1;
+            else
+                status_data[cnt++]=0;
+        }
+
+    }
+
+    printf("samDataMonitor Done\n");
+
+}
+/**
+ * @param {type} 
+ * @return: 
  * @Description: ADC输出转换为csv格式
  */
 int saveToCsv(short *buffer, int frame_w, int frame_h, char *path_out)
@@ -221,8 +252,8 @@ static int get_SysTime(char *filename,char *timeBuff)
     time_t now; //实例化time_t结构    
     struct tm timenow; //实例化tm结构指针 
 
-    time(&now);   //time函数读取现在的时间(国际标准时间非北京时间)，然后传值给now 
-    localtime_r(&now,&timenow);  //线程安全
+    time(&now);   
+    localtime_r(&now,&timenow);  //线程安全,获取日历，存储在timenow结构体
     gettimeofday(&microtime,NULL);//获取微秒
 
     if(timeBuff!=NULL){
@@ -232,7 +263,7 @@ static int get_SysTime(char *filename,char *timeBuff)
     else return 0;  
 
     if(filename!=NULL){
-       strftime(filename,32,"%Y-%m-%d %H:%M:%S",&timenow);
+       strftime(filename,32,"%Y-%m-%d %H-%M-%S",&timenow);
     }
     else return 0;
     
