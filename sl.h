@@ -3,7 +3,7 @@
  * @LastEditors: Please set LastEditors
  * @Description: 测量值计算相关函数及变量声明
  * @Date: 2019-04-10 19:42:53
- * @LastEditTime: 2019-07-22 02:56:39
+ * @LastEditTime: 2019-07-22 18:24:08
  */
 
 #ifndef md_sl__h
@@ -38,7 +38,7 @@ extern "C"
 
 #define SAMB 2     //每个采样点的字节数 2*8bit=16bit
 #define SAMC 16    //采样通道总数 16通道
-#define YXC  2     //遥信通道总数
+#define YXC  18     //遥信通道总数
 #define SAMF 25600 //采样频率 sampling frequency
 #define SAMP 512   //每周采样点数 sample Point per cycle
 #define SAML 8     //采样周波数

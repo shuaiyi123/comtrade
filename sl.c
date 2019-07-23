@@ -183,7 +183,7 @@ void statusDataMonitor(uint16 yxNnum, uint16 yxTotal, uint8 *status_data)
     for (i = 0; i < yxTotal; i++)
     {
         if(i>0){
-            if((i%10)==0)flag=1;
+            if((i%500)==0)flag=1;
             else flag=0;
         }
         for (chn = 0; chn < yxNnum; chn++)
@@ -252,8 +252,8 @@ static int get_SysTime(char *filename,char *timeBuff)
     time_t now; //实例化time_t结构    
     struct tm timenow; //实例化tm结构指针 
 
-    time(&now);   
-    localtime_r(&now,&timenow);  //线程安全,获取日历，存储在timenow结构体
+    time(&now);  //得到时间秒数 
+    localtime_r(&now,&timenow);  //线程安全,将秒数转化为日历，并存储在timenow结构体
     gettimeofday(&microtime,NULL);//获取微秒
 
     if(timeBuff!=NULL){

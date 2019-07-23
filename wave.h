@@ -3,7 +3,7 @@
  * @LastEditors: Please set LastEditors
  * @Description: 测量值计算相关函数及变量声明
  * @Date: 2019-04-10 19:42:53
- * @LastEditTime: 2019-07-22 02:56:45
+ * @LastEditTime: 2019-07-22 20:04:52
  */
 
 #ifndef md_wave__h
@@ -38,7 +38,7 @@ extern "C"
 
 #define SAMB 2     //每个采样点的字节数 2*8bit=16bit
 #define SAMC 16    //采样通道总数 16通道
-#define YXC  2     //遥信通道总数
+#define YXC  18     //遥信通道总数
 #define SAMF 25600 //采样频率 sampling frequency
 #define SAMP 512   //每周采样点数 sample Point per cycle
 #define SAML 8     //采样周波数
@@ -60,6 +60,22 @@ typedef enum {
     FALSE = 0,
     TRUE
 } FUNSTATUS;
+
+typedef struct 
+{
+    char *station_name;//厂站名
+    char *dev_id; //记录装置标识编号或名称
+    uint16 rec_year; //版本年号
+    uint16 tt; //通道总数
+    uint8 at;  //状态量通道总数
+    uint8 dt;  //数字量通道总数 
+    uint8 lf;  //电网频率
+    uint8 nrates; //采样率个数
+    uint32 samp;  //采样率
+    uint32 endsamp; //该采样率下最末采样序号
+    uint16 timemult; //时标倍率因子
+}CFGFILE_HEADER;
+
 struct tShmRly
 {
     int step;
