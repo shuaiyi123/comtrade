@@ -7,9 +7,9 @@ INCLUDES =
 CFLAGS  = -Wall -g 
 LIBS    = -lpthread -lrt -lm
 
-OBJS    = sl.o wave.o
+OBJS    = sl.o wave.o aly.o
 
-TARGET  = sl wv
+TARGET  = sl wv aly
 
 all:$(TARGET)
 
@@ -19,10 +19,13 @@ sl:sl.o
 wv:wave.o 
 	$(CC) -o $@ $^ $(INCLUDES) $(LIBS)
 
+aly:aly.o 
+	$(CC) -o $@ $^ $(INCLUDES) $(LIBS)
+
 %.o:%.c
 	$(CC) -c $< -o $@ $(INCLUDES) $(CFLAGS)
 
 .PHONY:
 clean:
-	rm -f $(TARGET) *.o 
+	rm -f $(TARGET) *.o
 

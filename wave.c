@@ -8,7 +8,7 @@ int main()
     sem_t *semRlyEmpty, *semRlyFull;
     void *shmRlyAddr = NULL;
     struct tShmRly *pshmRly;
-    struct stat buf;;
+    struct stat buf;
     signal(SIGINT, &funSIGINT);
     initWave();
 
@@ -88,7 +88,7 @@ int main()
     // 关闭shmRly
     close(shmRlyId);
 
-    //关闭信号�?
+    //关闭信号量
     sem_close(semRlyEmpty);
     sem_close(semRlyFull);
 
@@ -135,64 +135,65 @@ FUNSTATUS gener_CFGFile(char *startRecTim,char *faultZeroTime,char *filename,cha
     
     cfgFile_header.station_name    ="环网柜"; //厂站名
     cfgFile_header.dev_id          ="BD622"; //装置编号或名称
-    cfgFile_header.rec_year        =2013;    //版本年号
+    cfgFile_header.rec_year        =2013;    //comtrade版本年号
     cfgFile_header.tt              =34;     //通道总数
     cfgFile_header.at              =16;     //模拟量通道总数
     cfgFile_header.dt              =18;     //状态量通道总数
     cfgFile_header.lf              =50;     //电网频率
     cfgFile_header.nrates          =1 ;     //采样率个数
     cfgFile_header.samp            =25600;   //采样率
-    cfgFile_header.endsamp         =4096;    //该采样率下的最末采样序号
+    cfgFile_header.endsamp         =SAMP*SAML;    //该采样率下的最末采样序号
     cfgFile_header.timemult        =1;       //时标因子
     
-    fprintf(fp,"%s,%s,%d\n",cfgFile_header.station_name,cfgFile_header.dev_id,cfgFile_header.rec_year); //厂站名，记录装置标示，版本号
-    fprintf(fp,"%d,%dA,%dD\n",cfgFile_header.tt,cfgFile_header.at,cfgFile_header.dt);//通道总数，模拟通道总数，数字通道总数
+    fprintf(fp,"%s,%s,%d\r\n",cfgFile_header.station_name,cfgFile_header.dev_id,cfgFile_header.rec_year); //厂站名，记录装置标示，版本号
+    fprintf(fp,"%d,%dA,%dD\r\n",cfgFile_header.tt,cfgFile_header.at,cfgFile_header.dt);//通道总数，模拟通道总数，数字通道总数
+    
     //模拟量
-    fprintf(fp,"1,U01,,,V,0.000153,0.000000,0,-32768,32767,1,1,S\n");
-    fprintf(fp,"2,U02,,,V,0.000153,0.000000,0,-32768,32767,1,1,S\n");
-    fprintf(fp,"3,U03,,,V,0.000153,0.000000,0,-32768,32767,1,1,S\n");
-    fprintf(fp,"4,U04,,,V,0.000153,0.000000,0,-32768,32767,1,1,S\n");
-    fprintf(fp,"5,U05,,,V,0.000153,0.000000,0,-32768,32767,1,1,S\n");
-    fprintf(fp,"6,U06,,,V,0.000153,0.000000,0,-32768,32767,1,1,S\n");
-    fprintf(fp,"7,U07,,,V,0.000153,0.000000,0,-32768,32767,1,1,S\n");
-    fprintf(fp,"8,U08,,,V,0.000153,0.000000,0,-32768,32767,1,1,S\n");
-    fprintf(fp,"9,U09,,,V,0.000153,0.000000,0,-32768,32767,1,1,S\n");
-    fprintf(fp,"10,U10,,,V,0.000153,0.000000,0,-32768,32767,1,1,S\n");
-    fprintf(fp,"11,U11,,,V,0.000153,0.000000,0,-32768,32767,1,1,S\n");
-    fprintf(fp,"12,U12,,,V,0.000153,0.000000,0,-32768,32767,1,1,S\n");
-    fprintf(fp,"13,U13,,,V,0.000153,0.000000,0,-32768,32767,1,1,S\n");
-    fprintf(fp,"14,U14,,,V,0.000153,0.000000,0,-32768,32767,1,1,S\n");
-    fprintf(fp,"15,U15,,,V,0.000153,0.000000,0,-32768,32767,1,1,S\n");
-    fprintf(fp,"16,U16,,,V,0.000153,0.000000,0,-32768,32767,1,1,S\n");
+    fprintf(fp,"1,U01,,,V,0.000153,0.000000,0,-32768,32767,10,1,S\r\n");
+    fprintf(fp,"2,U02,,,V,0.000153,0.000000,0,-32768,32767,1,1,S\r\n");
+    fprintf(fp,"3,U03,,,V,0.000153,0.000000,0,-32768,32767,1,1,S\r\n");
+    fprintf(fp,"4,U04,,,V,0.000153,0.000000,0,-32768,32767,1,1,S\r\n");
+    fprintf(fp,"5,U05,,,V,0.000153,0.000000,0,-32768,32767,1,1,S\r\n");
+    fprintf(fp,"6,U06,,,V,0.000153,0.000000,0,-32768,32767,1,1,S\r\n");
+    fprintf(fp,"7,U07,,,V,0.000153,0.000000,0,-32768,32767,1,1,S\r\n");
+    fprintf(fp,"8,U08,,,V,0.000153,0.000000,0,-32768,32767,1,1,S\r\n");
+    fprintf(fp,"9,U09,,,V,0.000153,0.000000,0,-32768,32767,1,1,S\r\n");
+    fprintf(fp,"10,U10,,,V,0.000153,0.000000,0,-32768,32767,1,1,S\r\n");
+    fprintf(fp,"11,U11,,,V,0.000153,0.000000,0,-32768,32767,1,1,S\r\n");
+    fprintf(fp,"12,U12,,,V,0.000153,0.000000,0,-32768,32767,1,1,S\r\n");
+    fprintf(fp,"13,U13,,,V,0.000153,0.000000,0,-32768,32767,1,1,S\r\n");
+    fprintf(fp,"14,U14,,,V,0.000153,0.000000,0,-32768,32767,1,1,S\r\n");
+    fprintf(fp,"15,U15,,,V,0.000153,0.000000,0,-32768,32767,1,1,S\r\n");
+    fprintf(fp,"16,U16,,,V,0.000153,0.000000,0,-32768,32767,1,1,S\r\n");
 
     //状态量
-    fprintf(fp,"1,start,,,0\n");
-    fprintf(fp,"2,end,,,0\n");
-    fprintf(fp,"3,start1,,,0\n");
-    fprintf(fp,"4,end1,,,0\n");
-    fprintf(fp,"5,start2,,,0\n");
-    fprintf(fp,"6,end2,,,0\n");
-    fprintf(fp,"7,start3,,,0\n");
-    fprintf(fp,"8,end3,,,0\n");
-    fprintf(fp,"9,start4,,,0\n");
-    fprintf(fp,"10,end4,,,0\n");
-    fprintf(fp,"11,start5,,,0\n");
-    fprintf(fp,"12,end5,,,0\n");
-    fprintf(fp,"13,start6,,,0\n");
-    fprintf(fp,"14,end6,,,0\n");
-    fprintf(fp,"15,start7,,,0\n");
-    fprintf(fp,"16,end7,,,0\n");
-    fprintf(fp,"17,start8,,,0\n");
-    fprintf(fp,"18,end8,,,0\n");
+    fprintf(fp,"1,start,,,0\r\n");
+    fprintf(fp,"2,end,,,0\r\n");
+    fprintf(fp,"3,start1,,,0\r\n");
+    fprintf(fp,"4,end1,,,0\r\n");
+    fprintf(fp,"5,start2,,,0\r\n");
+    fprintf(fp,"6,end2,,,0\r\n");
+    fprintf(fp,"7,start3,,,0\r\n");
+    fprintf(fp,"8,end3,,,0\r\n");
+    fprintf(fp,"9,start4,,,0\r\n");
+    fprintf(fp,"10,end4,,,0\r\n");
+    fprintf(fp,"11,start5,,,0\r\n");
+    fprintf(fp,"12,end5,,,0\r\n");
+    fprintf(fp,"13,start6,,,0\r\n");
+    fprintf(fp,"14,end6,,,0\r\n");
+    fprintf(fp,"15,start7,,,0\r\n");
+    fprintf(fp,"16,end7,,,0\r\n");
+    fprintf(fp,"17,start8,,,0\r\n");
+    fprintf(fp,"18,end8,,,0\r\n");
 
-    fprintf(fp,"%d\n%d\n%d,%d\n",cfgFile_header.lf,cfgFile_header.nrates,cfgFile_header.samp,cfgFile_header.endsamp); //电网频率，采样率个数，采样率/HZ，最末采样序号
-    fprintf(fp,"%s\n%s\n",startRecTim,faultZeroTime);//开始录波时刻，故障0时刻
+    fprintf(fp,"%d\r\n%d\r\n%d,%d\r\n",cfgFile_header.lf,cfgFile_header.nrates,cfgFile_header.samp,cfgFile_header.endsamp); //电网频率，采样率个数，采样率/HZ，最末采样序号
+    fprintf(fp,"%s\r\n%s\r\n",startRecTim,faultZeroTime);//开始录波时刻，故障0时刻
 
-    if(yesBinFlag==1)fprintf(fp,"BINARY\n1\n");  //生成二进制文件，时标因子1
-    else fprintf(fp,"ASCII\n%d\n",cfgFile_header.timemult); //生成ASCII文件
+    if(yesBinFlag==1)fprintf(fp,"BINARY\r\n1\r\n");  //生成二进制文件，时标因子1
+    else fprintf(fp,"ASCII\r\n%d\n",cfgFile_header.timemult); //生成ASCII文件
 
-    fprintf(fp,"0,0h\n");//当地时间与UTC时差为0
-    fprintf(fp,"B,3\n");//误差10s以内,时钟源没有闰秒功能
+    fprintf(fp,"0,0h\r\n");//当地时间与UTC时差为0
+    fprintf(fp,"B,3\r\n");//误差10s以内,时钟源没有闰秒功能
 
     fclose(fp);
 
@@ -211,7 +212,6 @@ FUNSTATUS gener_BinDATFile(uint16 chanNum,uint16 yx_num,uint16 ever_samTotal,sho
     uint16 status_temp=0,status_data=0;//状态量
     uint32 num=1,timing=0;//序号，时标
     FILE *fp;
-    if(filename==NULL) return FALSE;
 
     sprintf(filename+19,".DAT");
 
@@ -222,18 +222,18 @@ FUNSTATUS gener_BinDATFile(uint16 chanNum,uint16 yx_num,uint16 ever_samTotal,sho
 
     for(j=0;j<ever_samTotal;j++){
 
-        fwrite(&num,sizeof(int),1,fp); //序号
-        fwrite(&timing,sizeof(int),1,fp); //时标
+        fwrite(&num,sizeof(uint32),1,fp); //序号
+        fwrite(&timing,sizeof(uint32),1,fp); //时标
         num++;
         timing+=39;  //时标=1000000/25600
 
         for(i=0;i<chanNum;i++){
-           fwrite(samDate++,sizeof(short),1,fp);
+           fwrite(samDate++,sizeof(short),1,fp);  //模拟量
         }
         
-        x=(uint8)yx_num/16;  //保存状态量以两个字节为单位，每一位代表一个状态量，即一个单位可保存16路状态量
+        x=(uint8)yx_num/16;  //保存数字量以两个字节为单位，每一位代表一个状态量，即一个单位可保存16路状态量
         y=(uint8)yx_num%16;
-        for(i=0;i<x;i++){
+        for(i=0;i<x;i++){  //状态量路数大于16
             for(k=0;k<16;k++){
                 status_temp=(uint16)(*staData&0x01);  //状态量只有两种情况，0或1
                 status_temp<<=k;  //低通道保存在低位
@@ -266,7 +266,6 @@ FUNSTATUS gerner_ASCIIDATFile(uint16 chanNum,uint16 yx_num,uint16 ever_samTotal,
      unsigned short i,j;
     unsigned int num=1,timimg=0;
     FILE *fp;
-    if(filename==NULL) return FALSE;
 
     sprintf(filename+19,".DAT");
 
@@ -287,9 +286,9 @@ FUNSTATUS gerner_ASCIIDATFile(uint16 chanNum,uint16 yx_num,uint16 ever_samTotal,
         for(i=0;i<yx_num;i++){  //数据量
             fprintf(fp,",%d",*staData++);
         }
-        fprintf(fp,"\n");
+        fprintf(fp,"\r\n");
     }
-    fprintf(fp,"1A\n");  //文件结束符
+    fprintf(fp,"1A\r\n");  //文件结束符
     fclose(fp);
     return TRUE;
 }

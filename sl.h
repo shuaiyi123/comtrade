@@ -3,7 +3,7 @@
  * @LastEditors: Please set LastEditors
  * @Description: 测量值计算相关函数及变量声明
  * @Date: 2019-04-10 19:42:53
- * @LastEditTime: 2019-07-22 18:24:08
+ * @LastEditTime: 2019-07-25 20:46:25
  */
 
 #ifndef md_sl__h
@@ -64,7 +64,7 @@ struct tShmRly
     char DATCFG_filename[32];  //DAT、CFG文件名
     char startRecoWave[32]; //开始录波时刻
     char faultZeroTime[32]; //故障0时刻
-    uint8 status_data[YXC_P_LEN];  //状态数据量，即摇信
+    uint8 status_data[YXC_P_LEN];  //状态数据量，即遥信
     short data[RLY_P_LEN];
 };
 

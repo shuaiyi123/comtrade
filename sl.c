@@ -182,10 +182,9 @@ void statusDataMonitor(uint16 yxNnum, uint16 yxTotal, uint8 *status_data)
     uint8 flag=0;
     for (i = 0; i < yxTotal; i++)
     {
-        if(i>0){
-            if((i%500)==0)flag=1;
-            else flag=0;
-        }
+        if(i>0)   
+            if((i%2000)==0)flag=1;
+       
         for (chn = 0; chn < yxNnum; chn++)
         {
 
@@ -257,7 +256,7 @@ static int get_SysTime(char *filename,char *timeBuff)
     gettimeofday(&microtime,NULL);//获取微秒
 
     if(timeBuff!=NULL){
-        strftime(timeBuff,32, "%m/%d/%Y,%H:%M:%S",&timenow);//将时间转化为自己需要的时间格式
+        strftime(timeBuff,32, "%d/%m/%Y,%H:%M:%S",&timenow);//将时间转化为自己需要的时间格式
         sprintf(timeBuff+19,".%ld",microtime.tv_usec); //将微秒追加到时间后面
     }
     else return 0;  

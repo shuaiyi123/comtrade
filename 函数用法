@@ -1,0 +1,353 @@
+mmap （一种内存映射文件的方法）
+说明：mmap将一个文件或者其它对象映射进内存。文件被映射到多个页上，如果文件的大小不是所有页的大小之和，最后一个页不被使用的空间将会清零。
+头文件 <sys/mman.h>
+函数原型
+void* mmap(void* start,size_t length,int prot,int flags,int fd,off_t offset);
+int munmap(void* start,size_t length);
+条件
+mmap()必须以PAGE_SIZE为单位进行映射，而内存也只能以页为单位进行映射，若要映射非PAGE_SIZE整数倍的地址范围，要先进行内存对齐，强行以PAGE_SIZE的倍数大小进行映射。
+参数说明
+start：映射区的开始地址，设置为0时表示由系统决定映射区的起始地址。
+length：映射区的长度。//长度单位是 以字节为单位，不足一内存页按一内存页处理
+prot：期望的内存保护标志，不能与文件的打开模式冲突。是以下的某个值，可以通过or运算合理地组合在一起
+PROT_EXEC //页内容可以被执行
+PROT_READ //页内容可以被读取
+PROT_WRITE //页可以被写入
+PROT_NONE //页不可访问
+flags：指定映射对象的类型，映射选项和映射页是否可以共享。它的值可以是一个或者多个以下位的组合体
+MAP_FIXED //使用指定的映射起始地址，如果由start和len参数指定的内存区重叠于现存的映射空间，重叠部分将会被丢弃。如果指定的起始地址不可用，操作将会失败。并且起始地址必须落在页的边界上。
+MAP_SHARED //与其它所有映射这个对象的进程共享映射空间。对共享区的写入，相当于输出到文件。直到msync()或者munmap()被调用，文件实际上不会被更新。
+MAP_PRIVATE //建立一个写入时拷贝的私有映射。内存区域的写入不会影响到原文件。这个标志和以上标志是互斥的，只能使用其中一个。
+MAP_DENYWRITE //这个标志被忽略。
+MAP_EXECUTABLE //同上
+MAP_NORESERVE //不要为这个映射保留交换空间。当交换空间被保留，对映射区修改的可能会得到保证。当交换空间不被保留，同时内存不足，对映射区的修改会引起段违例信号。
+MAP_LOCKED //锁定映射区的页面，从而防止页面被交换出内存。
+MAP_GROWSDOWN //用于堆栈，告诉内核VM系统，映射区可以向下扩展。
+MAP_ANONYMOUS //匿名映射，映射区不与任何文件关联。
+MAP_ANON //MAP_ANONYMOUS的别称，不再被使用。
+MAP_FILE //兼容标志，被忽略。
+MAP_32BIT //将映射区放在进程地址空间的低2GB，MAP_FIXED指定时会被忽略。当前这个标志只在x86-64平台上得到支持。
+MAP_POPULATE //为文件映射通过预读的方式准备好页表。随后对映射区的访问不会被页违例阻塞。
+MAP_NONBLOCK //仅和MAP_POPULATE一起使用时才有意义。不执行预读，只为已存在于内存中的页面建立页表入口。
+fd：有效的文件描述词。一般是由open()函数返回，其值也可以设置为-1，此时需要指定flags参数中的MAP_ANON,表明进行的是匿名映射。
+off_toffset：被映射对象内容的起点。
+
+
+
+返回说明
+编辑
+成功执行时，mmap()返回被映射区的指针，munmap()返回0。失败时，mmap()返回MAP_FAILED[其值为(void *)-1]，munmap返回-1。errno被设为以下的某个值
+EACCES：访问出错
+EAGAIN：文件已被锁定，或者太多的内存已被锁定
+EBADF：fd不是有效的文件描述词
+EINVAL：一个或者多个参数无效
+ENFILE：已达到系统对打开文件的限制
+ENODEV：指定文件所在的文件系统不支持内存映射
+ENOMEM：内存不足，或者进程已超出最大内存映射数量
+EPERM：权能不足，操作不允许
+ETXTBSY：已写的方式打开文件，同时指定MAP_DENYWRITE标志
+SIGSEGV：试着向只读区写入
+SIGBUS：试着访问不属于进程的内存区
+
+
+
+使用shm_open来操作共享内存
+shm_open最主要的操作也是默认的操作就是在/dev/shm/下面，建立一个文件。
+文件名字是用户自己输入的。
+要点一定要用ftruncate把文件大小于设置为共享内存大小。
+服务端：
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <sys/mman.h>
+#include<sys/types.h>
+#include <fcntl.h>
+#include <sys/stat.h>
+
+char buf[10];
+char *ptr;
+
+int main()
+{
+    int fd;
+    fd = shm_open("region",O_CREAT | O_RDWR, S_IRUSR | S_IWUSR);
+    if (fd<0)
+    {
+        printf("error open region\n");
+        return 0;
+    }
+
+    ftruncate(fd,10);
+    ptr= mmap(NULL, 10, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
+    if (ptr== MAP_FAILED) {
+        printf("error map\n");
+        return 0;
+    }
+
+    *ptr= 0x12;
+    return 0;
+}
+
+客户端：
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <sys/mman.h>
+#include <sys/types.h>
+#include <fcntl.h>
+#include <sys/stat.h>
+
+char buf[10];
+char *ptr;
+
+int main()
+{
+    int fd;
+    fd= shm_open("region",O_CREAT | O_RDWR, S_IRUSR | S_IWUSR);
+    if (fd<0){
+        printf("error open region\n");
+        return 0;
+    }
+    
+    ftruncate(fd,10);
+    ptr= mmap(NULL, 10, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
+    if (ptr== MAP_FAILED) {
+        printf("error map\n");
+        return 0;
+    }
+    while (*ptr!= 0x12);
+    printf("ptr: %d\n", *ptr);
+    return 0;
+}
+
+
+
+Linux信号量 sem_t简介
+
+函数介绍
+#include<semaphore.h>
+信号量的数据类型为结构sem_t，它本质上是一个长整型的数。
+函数sem_init()用来初始化一个信号量
+。
+它的原型为：int sem_init __P ((sem_t *__sem, int __pshared, unsigned int __value));
+sem为指向信号量结构的一个指针；
+pshared不为0时此信号量在进程间共享，否则只能为当前进程的所有线程共享；
+value给出了信号量的初始值。信号量用sem_init函数创建的，下面是它的说明：
+
+int sem_init (sem_t *sem, int pshared, unsigned int value); 这个函数的作用是对由sem指定的信号量进行初始化，设置好它的共享选项，并指定一个整数类型的初始值。
+pshared参数控制着信号量的类型。如果 pshared的值是0，就表示它是当前里程的局部信号量；否则，其它进程就能够共享这个信号量。我们现在只对不让进程共享的信号量感兴趣。　
+（这个参数 受版本影响），　pshared传递一个非零将会使函数调用失败，属于无名信号量。　　
+sem_open功能：创建并初始化有名信号灯，
+参数：name   信号灯的外部名字(不能为空，为空会出现段错误)  
+oflag   选择创建或打开一个现有的信号灯 
+mode 权限位  
+value 信号灯初始值  
+返回值：成功时返回指向信号灯的指针，出错时为SEM_FAILED，oflag参数能是0（打开一个已创建的）、O_CREAT（创建一个信号灯）或O_CREAT|O_EXCL（如果没有指定的信号灯就创建），
+如果指定了O_CREAT，那么第三个和第四个参数是需要的；其中mode参数指定权限位，value参数指定信号灯的初始值，通常用来指定共享资源的书面。
+该初始不能超过 SEM_VALUE_MAX，这个常值必须低于为32767。二值信号灯的初始值通常为1，计数信号灯的初始值则往往大于1。
+如果指定了O_CREAT（而没有指定O_EXCL），那么只有所需的信号灯尚未存在时才初始化他。所需信号灯已存在条件下指定O_CREAT不是个错误。该标志的意思仅仅是“如果所需信号灯尚未存在，
+那就创建并初始化他”。不过所需信号灯等已存在条件下指定O_CREAT|O_EXCL却是个错误。sem_open返回指向sem_t信号灯的指针，该结构里记录着当前共享资源的数目。
+
+sem_close 关闭有名信号灯。
+若成功则返回0，否则返回-1。一个进程终止时，内核还对其上仍然打开着的所有有名信号灯自动执行这样的信号灯关闭操作。不论该进程是自愿终止的还是非自愿终止的，这种自动关闭都会发生。
+但应注意的是关闭一个信号灯并没有将他从系统中删除。这就是说，Posix有名信号灯至少是随内核持续的：即使当前没有进程打开着某个信号灯，他的值仍然保持。
+多进程打开时候，一边sem_close后，仍可以打开已经打开的信号量。
+
+sem_unlink 从系统中删除信号灯 定义：int sem_unlink(const char *name);若成功则返回0，否则返回-1。有名信号灯使用sem_unlink从系统中删除。
+每个信号灯有一个引用计数器记录当前的打开次数，sem_unlink必须等待这个数为0时才能把name所指的信号灯从文件系统中删除。也就是要等待最后一个sem_close发生。
+
+sem_getvalue 测试信号灯
+函数sem_post( sem_t *sem )用来增加信号量的值。当有线程阻塞在这个信号量上时，调用这个函数会使其中的一个线程不在阻塞，选择机制同样是由线程的调度策略决定的。
+int sem_post(sem_t *sem);sem_post() 成功时返回 0；错误时，信号量的值没有更改，-1 被返回，并设置errno 来指明错误。错误 EINVAL sem 不是一个有效的信号量。 
+EOVERFLOW 信号量允许的最大值将要被超过。
+
+函数sem_wait( sem_t *sem )被用来阻塞当前线程直到信号量sem的值大于0，解除阻塞后将sem的值减一，表明公共资源经使用后减少。
+这两个函数控制着信号量的值，它们的定义如下所示：
+#include <semaphore.h> 
+int sem_wait(sem_t * sem);
+int sem_post(sem_t * sem);
+这两个函数都要用一个由sem_init调用初始化的信号量对象的指针做参数。
+
+sem_post函数的作用是给信号量的值加上一个“1”，它是一个“原子操作”－－－即同时对同一个信号量做加“1”操作的两个线程是不会冲突的；
+ 而同时对同一个文件进行读、加和写操作的两个程序就有可能会引起冲突。信号量的值永远会正确地加一个“2”－－因为有两个线程试图改变它。
+
+sem_wait函数也是一个原子操作，它的作用是从信号量的值减去一个“1”，但它永远会先等待该信号量为一个非零值才开始做减法。也就是说，如果你对 一个值为2的信号量调用sem_wait(),
+线程将会继续执行，介信号量的值将减到1。如果对一个值为0的信号量调用sem_wait()，这个函数就 会地等待直到有其它线程增加了这个值使它不再是0为止。
+如果有两个线程都在sem_wait()中等待同一个信号量变成非零值，那么当它被第三个线程增加 一个“1”时，等待线程中只有一个能够对信号量做减法并继续执行，另一个还将处于等待状态。
+信号量这种“只用一个函数就能原子化地测试和设置”的能力下正是它的价值所在。 还有另外一个信号量函数sem_trywait，它是sem_wait的非阻塞搭档。
+
+函数sem_trywait ( sem_t *sem )是函数sem_wait（）的非阻塞版本，它直接将信号量sem的值减一。在成功完成之后会返回零。其他任何返回值都表示出现了错误。　
+　
+函数sem_destroy(sem_t *sem)用来释放信号量sem，属于无名信号量。　
+最后一个信号量函数是sem_destroy。这个函数的作用是在我们用完信号量对它进行清理。下面的定义：#include<semaphore.h>int sem_destroy (sem_t *sem);
+
+这个函数也使用一个信号量指针做参数，归还自己战胜的一切资源。在清理信号量的时候如果还有线程在等待它，用户就会收到一个错误。与其它的函数一样，这些函数在成功时都返回“0”。
+
+
+
+malloc函数原型
+extern void *malloc(unsigned int num_bytes);
+
+malloc函数头文件
+#include <stdlib.h>
+或者
+#include <malloc.h>
+malloc应用
+type *p;
+if(NULL == (p = (type*)malloc(sizeof(type))))
+/*请使用if来判断,这是有必要的*/
+{
+    perror("error...");
+    exit(1);
+}
+.../*其它代码*/
+free(p);
+p = NULL;/*请加上这句*/
+
+malloc 也可以达到 new [] 的效果，申请出一段连续的内存，方法无非是指定你所需要内存大小。
+比如想分配100个int类型的空间：
+t *p = (int*)malloc(sizeof(int) * 100);
+//分配可以放得下100个整数的内存空间。
+
+
+Linux系统函数之文件系统管理（二）
+
+stat函数
+
+​ 作用：获取文件信息
+
+​ 头文件：include <sys/types.h> #include <sys/stat.h> #include <unistd.h>
+
+​ 函数原型：int stat(const char *path, struct stat *buf)
+
+​ 返回值：成功返回0，失败返回-1；
+
+​ 参数：文件路径（名），struct stat 类型的结构体
+
+struct stat 结构体详解：
+
+struct stat{   
+    dev_t     st_dev;     /* ID of device containing file */文件使用的设备号    
+    ino_t     st_ino;     /* inode number */    索引节点号     
+    mode_t    st_mode;    /* protection */  文件对应的模式，文件，目录等    
+    nlink_t   st_nlink;   /* number of hard links */    文件的硬连接数      
+    uid_t     st_uid;     /* user ID of owner */    所有者用户识别号    
+    gid_t     st_gid;     /* group ID of owner */   组识别号      
+    dev_t     st_rdev;    /* device ID (if special file) */ 设备文件的设备号    
+    off_t     st_size;    /* total size, in bytes */ 以字节为单位的文件容量       
+    blksize_t st_blksize; /* blocksize for file system I/O */ 包含该文件的磁盘块的大小       
+    blkcnt_t  st_blocks;  /* number of 512B blocks allocated */ 该文件所占的磁盘块      
+    time_t    st_atime;   /* time of last access */ 最后一次访问该文件的时间       
+    time_t    st_mtime;   /* time of last modification */ /最后一次修改该文件的时间       
+    time_t    st_ctime;   /* time of last status change */ 最后一次改变该文件状态的时间  
+};
+
+函数mmap()的使用:
+
+函数mmap是linux的一个系统函数。如下： 
+函数原型：void *mmap(void *addr, size_t length, int prot, int flags,int fd, off_t offset); 
+配套函数原型：int munmap(void *addr, size_t length); 
+头文件：#include <sys/mman.h> 
+返回值：成功返回创建的映射区的首地址；失败返回宏MAP_FAILED。 
+参数介绍： 
+addr:       建立映射区的首地址，由Linux内核指定。使用时，直接传递NULL。 
+length： 欲创建映射区的大小。 
+prot：      映射区权限PROT_READ、PROT_WRITE、PROT_READ|PROT_WRITE。 
+flags：     标志位参数(常用于设定更新物理区域、设置共享、创建匿名映射区)； 
+MAP_SHARED:  会将映射区所做的操作反映到物理设备（磁盘）上。 
+MAP_PRIVATE: 映射区所做的修改不会反映到物理设备。 
+fd：         用来建立映射区的文件描述符。 
+offset： 映射文件的偏移(4k的整数倍)。 
+munmap函数： 
+同malloc函数申请内存空间类似的，mmap建立的映射区在使用结束后也应调用类似free的函数来释放。 
+返回值：成功：0； 失败：-1 
+接下来来使用mamp函数创建一个映射区：代码如下 
+#include <stdio.h> 
+#include <stdlib.h> 
+#include <sys/mman.h> 
+#include <sys/types.h> 
+#include <unistd.h> 
+#include <sys/stat.h> 
+#include <fcntl.h> 
+#include <string.h> 
+ 
+void sys_err(char p[])//处理错误 
+{ 
+    perror(p); 
+    exit(1); 
+} 
+int main() 
+{ 
+    int o_ret = open("my_mmap.txt", O_CREAT | O_RDWR, 0644);//创建一个新文件 
+    if (-1 == o_ret) //错误检查是一个很好的习惯 
+    { 
+        sys_err("open "); 
+    } 
+ 
+    int f_ret = ftruncate(o_ret, 512);//在此文件大小的基础上扩展512字节大小，即文件现有大小为512字节（是个好函数，该记着。） 
+    if (-1 == f_ret)//成功返回0 
+    { 
+        sys_err("ftruncate "); 
+    } 
+ 
+    //——————————————————————————————————————————— 
+    struct stat statbuf; 
+    int s_ret = stat("my_mmap.txt", &statbuf); 
+    if (-1 == s_ret) 
+    { 
+        sys_err("stat "); 
+    } 
+    //——————————————————————————————————————————— 
+    /* 
+    上面这段代码是我用来获取文件大小的方法，并没有一个系统函数能够直接获取文件的大小。所以我利用stat结构体存储文件的相关信息，
+    然后获取到文件的大小：statbuf.st_size */ 
+    char *const address = (char *)mmap(NULL, statbuf.st_size, PROT_READ | PROT_WRITE, MAP_SHARED, o_ret, 0); 
+    //这里注意，我写的是char *const address这保证了address的值不变。 
+    if (MAP_FAILED == address)//若是mmap函数调用失败 
+    { 
+        sys_err("mmap "); 
+    } 
+    strcpy(address, "hallo, mmap");//能做这个操作是有先决条件的：映射区拥有写权限。 
+    int c_ret = close(o_ret); 
+    if (-1 == c_ret) 
+    { 
+        sys_err("close "); 
+    } 
+ 
+    int mun_ret = munmap(address, statbuf.st_size);//释放掉映射区。 
+    if (-1 == mun_ret) 
+    { 
+        sys_err("munmap "); 
+    } 
+ 
+    //printf("hello from mmap_test!\n"); 
+    return 0; 
+} 
+很简单，这段代码编译之后就可以良好的运行下去。现在，我们来思考几个问题： 
+可以open的时候O_CREAT一个新文件来创建映射区吗? 
+如果open时O_RDONLY, mmap时PROT参数指定PROT_READ|PROT_WRITE会怎样？ 
+文件描述符先关闭，对mmap映射有没有影响？ 
+若是length参数大于文件的大小会怎样？ 
+对mmap函数的返回值进行越界操作（++，–）会怎样？ 
+如果文件偏移量为1000会怎样？ 
+如果不检测mmap的返回值，会怎样？ 
+答案： 
+可以，只要是正确的文件描述符传递给mmap都行 
+O_RDONLY代表只读，PROT_READ|PROT_WRITE代表读写，通过测试，我们就知道这是不行的，文件的权限代表着能对文件执行的操作；
+这里有一个结论：当第四个参数为MAP_SHARED时，映射区的权限应小于等于文件打开的权限。这样做的原因是出于对映射区的保护。
+而当第四个参数为MAP_PRIVATE时，就无所谓了，因为mmap中的权限时对内存的限制（映射区时在缓存区中创建的，缓存区是由内核管理调动的，不属于内存区域）。 
+只要mmap调用成功，文件就可以立即关闭，映射区的释放、操作与文件的关闭无关，因为映射区创建成功后时通过另一种方式（指针）来管理的。 
+注意：当用于创建映射区的文件大小为0时，不能创建映射区，会提示总线错误。所以：用于创建映射区的文件必须有实际的文件大小，并且创建的映射区大小不能超过文件大小。
+当出现总线错误的时候，多半是由于共享文件储存空间大小不正确引起的。 
+会造成调用munmap函数失败，不能释放映射区。所以推荐使用const关键字限定指针的值。 
+会出错，前面说过，文件的偏移量必须是4096（4k）的整数倍。 
+会死的很难看，因为使用mmap函数出错的几率很高。 
+在补充一下： 
+p = mmap(NULL, size, PROT_READ | PROT_WRITE, MAP_SHARED | MAP_ANON, -1, 0);看到标颜色的字词了吗？其中MAP_ANON是MAP_ANONYMOUS（MAP_ANONYMOUS //匿名映射，映射区不与任何文件关联。）的别称，不再被使用。因为我们创建一个匿名映射，所以我们不需要传递文件描述符。
+
+相关函数：link, rename, remove
+
+头文件：#include <unistd.h>
+
+定义函数：int unlink(const char * pathname);//删除文件
