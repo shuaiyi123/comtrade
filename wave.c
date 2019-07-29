@@ -126,7 +126,7 @@ FUNSTATUS gener_CFGFile(char *startRecTim,char *faultZeroTime,char *filename,cha
     CFGFILE_HEADER cfgFile_header;
     if(filename==NULL) return FALSE;
 
-    sprintf(filename+19,".CFG");
+    sprintf(filename+19,".cfg");
 
     if((fp=fopen(filename, "w"))==NULL){
         printf("open %s flie error",filename);
@@ -213,7 +213,7 @@ FUNSTATUS gener_BinDATFile(uint16 chanNum,uint16 yx_num,uint16 ever_samTotal,sho
     uint32 num=1,timing=0;//序号，时标
     FILE *fp;
 
-    sprintf(filename+19,".DAT");
+    sprintf(filename+19,".dat");
 
     if((fp=fopen(filename, "wb"))==NULL){
         printf("open %s flie error",filename);

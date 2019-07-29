@@ -2,7 +2,7 @@
  * @Description: In User Settings Edit
  * @Author: your name
  * @Date: 2019-07-22 23:07:01
- * @LastEditTime: 2019-07-26 00:45:26
+ * @LastEditTime: 2019-07-28 18:10:29
  * @LastEditors: Please set LastEditors
  */
 
@@ -63,7 +63,8 @@ typedef struct {
     char  dChaName[64][12]; //数字量通道名
     char  norm[64]; //正常状态
 
-    int endsamp; //该采样率下最末采样序号
+    char nrates;  //采样率个数 
+    int  endsamp; //该采样率下最末采样序号
     char fileFmt[10]; //DAT文件格式
 
     char line[256]; //用来保存文件一行的数据

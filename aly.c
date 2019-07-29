@@ -70,12 +70,12 @@ int main(int argc, char **argv)
     } 
     
     //生成.CSV电子表格
-    status=saveToCSV("scmp.CSV",cfgFile_Header,ptr_ana,ptr_degi);
+    status=saveToCSV("scmp.csv",cfgFile_Header,ptr_ana,ptr_degi);
     if(status==false){
         printf("scmp.CSV error!");
         exit(1);
     }
-    printf("Generate scmp.CFG success\n");
+    printf("Generate scmp.scv success\n");
         //取消shmRly映射
     if (-1 == munmap(cfgAddr, sizeof(CFGFILE_HEADER)))
     {
@@ -105,7 +105,7 @@ bool analy_CfgFile(char *filename, CFGFILE_HEADER *cfgFile_Header)
 {
     FILE *fp;
     uint16 i,cnt=0;
-    
+    int endSamp;
     if((fp=fopen(filename,"r"))==NULL){
         printf("open %s file error!",filename);
         return false;
@@ -117,7 +117,7 @@ bool analy_CfgFile(char *filename, CFGFILE_HEADER *cfgFile_Header)
     fgets(cfgFile_Header->line,127,fp);//读取第二行
     cnt++;
     sscanf(cfgFile_Header->line,"%d,%dA,%d",&cfgFile_Header->tt,&cfgFile_Header->at,&cfgFile_Header->dt);
-    //printf("%d,%d,%d\n",cfgFile_Header->tt,cfgFile_Header->at,cfgFile_Header->dt);
+    printf("%d,%d,%d\n",cfgFile_Header->tt,cfgFile_Header->at,cfgFile_Header->dt);
 
     for(i=0;i<cfgFile_Header->at;i++){  //处理模拟通道
         fgets(cfgFile_Header->line,127,fp);//读取整一行
@@ -135,11 +135,19 @@ bool analy_CfgFile(char *filename, CFGFILE_HEADER *cfgFile_Header)
     }
     if((cnt-2-cfgFile_Header->aNum)!=cfgFile_Header->dNum)return false;
     
-    for(i=0;i<3;i++){ //获取通道最末采样数
+    for(i=0;i<2;i++){ //获取采样率个数
         fgets(cfgFile_Header->line,127,fp);
         cnt++;
     }
-    sscanf(cfgFile_Header->line,"%*[^,],%d",&cfgFile_Header->endsamp);
+    sscanf(cfgFile_Header->line,"%d",&cfgFile_Header->nrates);
+
+    //获取通道最末采样数
+    cfgFile_Header->endsamp=0;
+    for(i=0;i<cfgFile_Header->nrates;i++){
+        fgets(cfgFile_Header->line,127,fp);
+        sscanf(cfgFile_Header->line,"%*[^,],%d",&endSamp);
+        cfgFile_Header->endsamp+=endSamp;
+    }
     //printf("%d\n",cfgFile_Header->endsamp);
 
     for(i=0;i<3;i++){  //获取DAT文件格式
@@ -160,8 +168,8 @@ bool analy_CfgFile(char *filename, CFGFILE_HEADER *cfgFile_Header)
 bool analy_DATile(char *fileName,CFGFILE_HEADER *cfgFile_Header,short *anaData,char *degiData)
 {
     FILE *fp;
-    uint8 i,j,x,y,status=0;
-    uint16 dData[4];
+    uint8 i,j,x,y;
+    uint16 dData;
     uint32 num,time;
     int cmp,cnt,dNum=0;
     char datFileName[32];
@@ -213,20 +221,17 @@ bool analy_DATile(char *fileName,CFGFILE_HEADER *cfgFile_Header,short *anaData,c
             x=cfgFile_Header->dt/16; //数字量
             y=cfgFile_Header->dt%16;
             for(i=0;i<x;i++){ //遥信量大于16路
-
-                fread(&dData[i],sizeof(uint16),1,fp); 
+                fread(&dData,sizeof(uint16),1,fp); 
                 for(j=0;j<16;j++){
-                    status|= dData[i]&0x0001;
-                    dData[i] >>=1;
-                    degiData[dNum++]=status;
+                    degiData[dNum++] = (char)dData&0x0001;
+                    dData >>=1;
                 }
             }
             if(y>0)
-                fread(&dData[0],sizeof(uint16),1,fp);
+                fread(&dData,sizeof(uint16),1,fp);
             for(i=0;i<y;i++){ 
-                status|= dData[0]&0x0001;
-                dData[i] >>=1;
-                degiData[dNum++]=status;
+                degiData[dNum++] = (char)dData&0x0001;
+                dData >>=1;
             }
         }
     }
